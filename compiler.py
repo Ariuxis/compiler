@@ -39,12 +39,11 @@ frequencyText.config(state = DISABLED)
 execText.config(state = DISABLED)
 # Initialization of variables #
 registerList = []
-cycles = 0
 frequency = 0
 period = 0
 
-def registerToConstant(line):
-    """Procedure that has a line of code as an argument and matches it to the register = constant instruction in Von Neumann."""
+def registerToConstant(line, cycles):
+    """Function that has a line of code as an argument and matches it to the register = constant instruction in Von Neumann and returns the cycles it takes."""
     # Regular expression for register = constant.
     if(re.match("^([A-z]+)\s*=\s*([0-9]+)$", line)):
         outputText.config(state = NORMAL)
@@ -54,9 +53,12 @@ def registerToConstant(line):
         if(register not in registerList):
             registerList.append(register)
         outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant))
+        cycles = cycles + 5
         outputText.config(state = DISABLED)
-def registerToRegister(line):
-    """Procedure that has a line of code as an argument and matches it to the register = register instruction in Von Neumann."""
+    return cycles
+        
+def registerToRegister(line, cycles):
+    """Function that has a line of code as an argument and matches it to the register = register instruction in Von Neumann and returns the cycles it takes."""
     # Regular expression for register = register.
     if(re.match("^([A-z]+)\s*=\s*([A-z]+)$", line)):
         outputText.config(state = NORMAL)
@@ -68,10 +70,12 @@ def registerToRegister(line):
         if(register2 not in registerList):
             registerList.append(register2)
         outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), registerList.index(register2)))
+        cycles = cycles + 6
         outputText.config(state = DISABLED)
+    return cycles
 
-def addRegisterToConstant(line):
-    """Procedure that has a line of code as an argument and matches it to the register = register + constant instruction in Von Neumann."""
+def addRegisterToConstant(line, cycles):
+    """Function that has a line of code as an argument and matches it to the register = register + constant instruction in Von Neumann and returns the cycles it takes."""
     if(re.match("^([A-z]+)\s*=\s*([A-z]+)\s*[+]\s*([0-9]+)$", line)):
         outputText.config(state = NORMAL)
         instruction = re.match("^([A-z]+)\s*=\s*([A-z]+)\s*[+]\s*([0-9]+)$", line)
@@ -82,11 +86,36 @@ def addRegisterToConstant(line):
             registerList.append(register1)
         if(register2 not in registerList):
             registerList.append(register2)
-        outputText.insert(END, "ADD R{}, R{}, {}\n".format(registerList.index(register1), registerList.index(register2), constant))
+        if(register1 == register2):
+            outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register1), constant))
+            cycles = cycles + 8
+        elif(register1 != register2):
+            outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register2), constant))
+            outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), registerList.index(register2)))
+            cycles = cycles + 14
         outputText.config(state = DISABLED)
+    elif(re.match("^([A-z]+)\s*=\s*([0-9]+)\s*[+]\s*([A-z]+)$", line)):
+        outputText.config(state = NORMAL)
+        instruction = re.match("^([A-z]+)\s*=\s*([0-9]+)\s*[+]\s*([A-z]+)$", line)
+        register1 = instruction.group(1)
+        register2 = instruction.group(3)
+        constant = instruction.group(2)
+        if(register1 not in registerList):
+            registerList.append(register1)
+        if(register2 not in registerList):
+            registerList.append(register2)
+        if(register1 == register2):
+            outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register1), constant))
+            cycles = cycles + 8
+        elif(register1 != register2):
+            outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register2), constant))
+            outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), registerList.index(register2)))
+            cycles = cycles + 14
+        outputText.config(state = DISABLED)
+    return cycles
 
-def addRegisterToRegister(line):
-    """Procedure that has a line of code as an argument and matches it to the register = register + register instruction in Von Neumann."""
+def addRegisterToRegister(line, cycles):
+    """Function that has a line of code as an argument and matches it to the register = register + register instruction in Von Neumann and returns the cycles it takes."""
     if(re.match("^([A-z]+)\s*=\s*([A-z]+)\s*[+]\s*([A-z]+)$", line)):
         outputText.config(state = NORMAL)
         instruction = re.match("^([A-z]+)\s*=\s*([A-z]+)\s*[+]\s*([A-z]+)$", line)
@@ -109,19 +138,40 @@ def addRegisterToRegister(line):
             outputText.insert(END, "ADD R{}, R{}\n".format(registerList.index(register2), registerList.index(register3)))
             outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), registerList.index(register2)))
         outputText.config(state = DISABLED)
+    return cycles
 
-def compiler():
+def addConstantToConstant(line, cycles):
+    """Function that has a line of code as an argument and matches it to the register = constant + constant instruction in Von Neumann and returns the cycles it takes."""
+    if(re.match("^([A-z]+)\s*=\s*([0-9]+)\s*[+]\s*([0-9]+)$", line)):
+        outputText.config(state = NORMAL)
+        instruction = re.match("^([A-z]+)\s*=\s*([0-9]+)\s*[+]\s*([0-9]+)$", line)
+        register = instruction.group(1)
+        constant1 = instruction.group(2)
+        constant2 = instruction.group(3)
+        if(register not in registerList):
+            registerList.append(register)
+        outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant1))
+        outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register), constant2))
+        cycles = cycles + 13
+        outputText.config(state = DISABLED)
+    return cycles
+
+def compiler(cycles):
     algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
     for line in algorithm:
-        registerToConstant(line)
-        registerToRegister(line)
-        addRegisterToConstant(line)
-        addRegisterToRegister(line)
+        cycles = registerToConstant(line, cycles)
+        cycles = registerToRegister(line, cycles)
+        cycles = addRegisterToConstant(line, cycles)
+        cycles = addRegisterToRegister(line, cycles)
+        cycles = addConstantToConstant(line, cycles)
+    return cycles
         
 def translate():
+    cycles = 0
     if(inputText.get("1.0", END) != "\n"):
-        compiler()
-
+        cycles = compiler(cycles)
+    print(cycles)
+    
 def clear():
     """Procedure that clears all the text boxes."""
     inputText.delete("1.0", END)
