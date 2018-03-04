@@ -51,7 +51,8 @@ def registerToConstant(line, cycles):
         register = instruction.group(1)
         constant = instruction.group(2)
         if(register not in registerList):
-            registerList.append(register)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant))
         cycles = cycles + 5
         outputText.config(state = DISABLED)
@@ -66,9 +67,11 @@ def registerToRegister(line, cycles):
         register1 = instruction.group(1)
         register2 = instruction.group(2)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), registerList.index(register2)))
         cycles = cycles + 6
         outputText.config(state = DISABLED)
@@ -83,9 +86,11 @@ def addRegisterToConstant(line, cycles):
         register2 = instruction.group(2)
         constant = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register1 == register2):
             outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register1), constant))
             cycles = cycles + 8
@@ -101,9 +106,11 @@ def addRegisterToConstant(line, cycles):
         register2 = instruction.group(3)
         constant = instruction.group(2)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register1 == register2):
             outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register1), constant))
             cycles = cycles + 8
@@ -123,11 +130,14 @@ def addRegisterToRegister(line, cycles):
         register2 = instruction.group(2)
         register3 = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register3 not in registerList):
-            registerList.append(register3)
+            cycles = 0
+            return cycles
         if(register1 == register2 and register1 != register3):
             outputText.insert(END, "ADD R{}, R{}\n".format(registerList.index(register1), registerList.index(register3)))
             cycles = cycles + 0
@@ -153,7 +163,8 @@ def addConstantToConstant(line, cycles):
         constant1 = instruction.group(2)
         constant2 = instruction.group(3)
         if(register not in registerList):
-            registerList.append(register)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant1))
         outputText.insert(END, "ADD R{}, {}\n".format(registerList.index(register), constant2))
         cycles = cycles + 0
@@ -169,9 +180,11 @@ def mulRegisterToConstant(line, cycles):
         register2 = instruction.group(2)
         constant = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register1 == register2):
             outputText.insert(END, "MUL R{}, {}\n".format(registerList.index(register1), constant))
             cycles = cycles + 0
@@ -187,9 +200,11 @@ def mulRegisterToConstant(line, cycles):
         register2 = instruction.group(3)
         constant = instruction.group(2)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register1 == register2):
             outputText.insert(END, "MUL R{}, {}\n".format(registerList.index(register1), constant))
             cycles = cycles + 0
@@ -209,11 +224,14 @@ def mulRegisterToRegister(line, cycles):
         register2 = instruction.group(2)
         register3 = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register3 not in registerList):
-            registerList.append(register3)
+            cycles = 0
+            return cycles
         if(register1 == register2 and register1 != register3):
             outputText.insert(END, "MUL R{}, R{}\n".format(registerList.index(register1), registerList.index(register3)))
             cycles = cycles + 0
@@ -239,7 +257,8 @@ def mulConstantToConstant(line, cycles):
         constant1 = instruction.group(2)
         constant2 = instruction.group(3)
         if(register not in registerList):
-            registerList.append(register)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant1))
         outputText.insert(END, "MUL R{}, {}\n".format(registerList.index(register), constant2))
         cycles = cycles + 0
@@ -255,9 +274,11 @@ def subRegisterToConstant(line, cycles):
         register2 = instruction.group(2)
         constant = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register1 == register2):
             outputText.insert(END, "SUB R{}, {}\n".format(registerList.index(register1), constant))
             cycles = cycles + 0
@@ -273,9 +294,11 @@ def subRegisterToConstant(line, cycles):
         register2 = instruction.group(3)
         constant = instruction.group(2)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(len(registerList), constant))
         outputText.insert(END, "SUB R{}, R{}\n".format(len(registerList), registerList.index(register2)))
         outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), len(registerList)))
@@ -292,7 +315,8 @@ def subConstantToConstant(line, cycles):
         constant1 = instruction.group(2)
         constant2 = instruction.group(3)
         if(register not in registerList):
-            registerList.append(register)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant1))
         outputText.insert(END, "SUB R{}, {}\n".format(registerList.index(register), constant2))
         cycles = cycles + 0
@@ -308,11 +332,14 @@ def subRegisterToRegister(line, cycles):
         register2 = instruction.group(2)
         register3 = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register3 not in registerList):
-            registerList.append(register3)
+            cycles = 0
+            return cycles
         if(register1 == register2 and register1 != register3):
             outputText.insert(END, "SUB R{}, R{}\n".format(registerList.index(register1), registerList.index(register3)))
             cycles = cycles + 0
@@ -335,7 +362,8 @@ def divConstantToConstant(line, cycles):
         constant1 = instruction.group(2)
         constant2 = instruction.group(3)
         if(register not in registerList):
-            registerList.append(register)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(registerList.index(register), constant1))
         outputText.insert(END, "DIV R{}, {}\n".format(registerList.index(register), constant2))
         cycles = cycles + 0
@@ -351,9 +379,11 @@ def divRegisterToConstant(line, cycles):
         register2 = instruction.group(2)
         constant = instruction.group(3)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         if(register1 == register2):
             outputText.insert(END, "DIV R{}, {}\n".format(registerList.index(register1), constant))
             cycles = cycles + 0
@@ -369,36 +399,108 @@ def divRegisterToConstant(line, cycles):
         register2 = instruction.group(3)
         constant = instruction.group(2)
         if(register1 not in registerList):
-            registerList.append(register1)
+            cycles = 0
+            return cycles
         if(register2 not in registerList):
-            registerList.append(register2)
+            cycles = 0
+            return cycles
         outputText.insert(END, "MOV R{}, {}\n".format(len(registerList), constant))
         outputText.insert(END, "DIV R{}, R{}\n".format(len(registerList), registerList.index(register2)))
         outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), len(registerList)))
         cycles = cycles + 0
         outputText.config(state = DISABLED)
     return cycles
-            
+
+def divRegisterToRegister(line, cycles):
+    """Function that has a line of code as an argument and matches it to the register = register / register instruction in Von Neumann and returns the cycles it takes."""
+    if(re.match("^([A-z]+)\s*=\s*([A-z]+)\s*[/]\s*([A-z]+)$", line)):
+        outputText.config(state = NORMAL)
+        instruction = re.match("^([A-z]+)\s*=\s*([A-z]+)\s*[/]\s*([A-z]+)$", line)
+        register1 = instruction.group(1)
+        register2 = instruction.group(2)
+        register3 = instruction.group(3)
+        if(register1 not in registerList):
+            cycles = 0
+            return cycles
+        if(register2 not in registerList):
+            cycles = 0
+            return cycles
+        if(register3 not in registerList):
+            cycles = 0
+            return cycles
+        if(register1 == register2 and register1 != register3):
+            outputText.insert(END, "DIV R{}, R{}\n".format(registerList.index(register1), registerList.index(register3)))
+            cycles = cycles + 0
+        elif(register1 == register2 and register1 == register3):
+            outputText.insert(END, "DIV R{}, R{}\n".format(registerList.index(register1), registerList.index(register1)))
+            cycles = cycles + 0
+        else:
+            outputText.insert(END, "DIV R{}, R{}\n".format(registerList.index(register2), registerList.index(register3)))
+            outputText.insert(END, "MOV R{}, R{}\n".format(registerList.index(register1), registerList.index(register2)))
+            cycles = cycles + 0
+        outputText.config(state = DISABLED)
+    return cycles
+
+def branch(algorithm, cycles):
+    """Function that has an algorithm as an argument and matches it to the corresponding branch instruction in Von Neumann and returns the cycles it takes."""
+    if(re.match("^(if)\s*([A-z]+)\s*(<|>|={2})\s*([A-z]+|[0-9]*)\s*{$", algorithm[0])):
+        instruction = re.match("^(if)\s*([A-z]+)\s*(<|>|={2})\s*([A-z]+|[0-9]*)\s*{$", algorithm[0])
+        register1 = instruction.group(1)
+        register2 = instruction.group(3)
+        operator = instruction.group(2)
+        if(register1 not in registerList):
+            cycles = 0
+            return cycles
+        if(register2.isdigit()):
+            print("hello")
+        algorithm.pop(0)
+        while(algorithm[0] != "}"):
+            cycles = registerToConstant(algorithm[0], cycles)
+            cycles = registerToRegister(algorithm[0], cycles)
+            cycles = addRegisterToConstant(algorithm[0], cycles)
+            cycles = addRegisterToRegister(algorithm[0], cycles)
+            cycles = addConstantToConstant(algorithm[0], cycles)
+            cycles = mulRegisterToConstant(algorithm[0], cycles)
+            cycles = mulRegisterToRegister(algorithm[0], cycles)
+            cycles = mulConstantToConstant(algorithm[0], cycles)
+            cycles = subRegisterToConstant(algorithm[0], cycles)
+            cycles = subRegisterToRegister(algorithm[0], cycles)
+            cycles = subConstantToConstant(algorithm[0], cycles)
+            cycles = divRegisterToConstant(algorithm[0], cycles)
+            cycles = divRegisterToRegister(algorithm[0], cycles)
+            cycles = divConstantToConstant(algorithm[0], cycles)    
+
 def compiler(cycles):
     algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
     for line in algorithm:
-        cycles = registerToConstant(line, cycles)
-        cycles = registerToRegister(line, cycles)
-        cycles = addRegisterToConstant(line, cycles)
-        cycles = addRegisterToRegister(line, cycles)
-        cycles = addConstantToConstant(line, cycles)
-        cycles = mulRegisterToConstant(line, cycles)
-        cycles = mulRegisterToRegister(line, cycles)
-        cycles = mulConstantToConstant(line, cycles)
-        cycles = subRegisterToConstant(line, cycles)
-        cycles = subConstantToConstant(line, cycles)
-        cycles = subRegisterToRegister(line, cycles)
-        cycles = divConstantToConstant(line, cycles)
-        cycles = divRegisterToConstant(line, cycles)
+        if(re.match("^(int)\s*([A-z]+[0-9]*)$", line)):
+            instruction = re.match("^(int)\s*([A-z]+[0-9]*)$", line)
+            register = instruction.group(2)
+            if(register not in registerList):
+                registerList.append(register)
+    while(algorithm != [] and cycles != 0):
+        cycles = registerToConstant(algorithm[0], cycles)
+        cycles = registerToRegister(algorithm[0], cycles)
+        cycles = addRegisterToConstant(algorithm[0], cycles)
+        cycles = addRegisterToRegister(algorithm[0], cycles)
+        cycles = addConstantToConstant(algorithm[0], cycles)
+        cycles = mulRegisterToConstant(algorithm[0], cycles)
+        cycles = mulRegisterToRegister(algorithm[0], cycles)
+        cycles = mulConstantToConstant(algorithm[0], cycles)
+        cycles = subRegisterToConstant(algorithm[0], cycles)
+        cycles = subRegisterToRegister(algorithm[0], cycles)
+        cycles = subConstantToConstant(algorithm[0], cycles)
+        cycles = divRegisterToConstant(algorithm[0], cycles)
+        cycles = divRegisterToRegister(algorithm[0], cycles)
+        cycles = divConstantToConstant(algorithm[0], cycles)
+        algorithm.pop(0)
+    if(cycles == 0):
+        print("Asegurese de declarar todas las variables.")
+    print(registerList)
     return cycles
         
 def translate():
-    cycles = 0
+    cycles = 1
     if(inputText.get("1.0", END) != "\n"):
         cycles = compiler(cycles)
     print(cycles)
