@@ -39,6 +39,7 @@ frequencyText.config(state = DISABLED)
 execText.config(state = DISABLED)
 # Initialization of variables #
 registerList = []
+counterList = [0, 0, 0] # First position corresponds to if, second to for, third to while
 frequency = 0
 period = 0
 
@@ -444,15 +445,46 @@ def divRegisterToRegister(line, cycles):
 def branch(algorithm, cycles):
     """Function that has an algorithm as an argument and matches it to the corresponding branch instruction in Von Neumann and returns the cycles it takes."""
     if(re.match("^(if)\s*([A-z]+)\s*(<|>|={2})\s*([A-z]+|[0-9]*)\s*{$", algorithm[0])):
+        outputText.config(state = NORMAL)
         instruction = re.match("^(if)\s*([A-z]+)\s*(<|>|={2})\s*([A-z]+|[0-9]*)\s*{$", algorithm[0])
-        register1 = instruction.group(1)
-        register2 = instruction.group(3)
-        operator = instruction.group(2)
+        register1 = instruction.group(2)
+        register2 = instruction.group(4)
+        operator = instruction.group(3)
         if(register1 not in registerList):
+            print("test1")
             cycles = 0
             return cycles
-        if(register2.isdigit()):
-            print("hello")
+        if(register2.isdigit() == 0):
+            if(register2 not in registerList):
+                print("test2")
+                cycles = 0
+                return cycles
+            else:
+                if(operator == "<"):
+                    outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+                    outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+                    cycles = cycles + 0
+                elif(operator == ">"):
+                    outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+                    outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+                    cycles = cycles + 0
+                elif(operator == "=="):
+                    outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+                    outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+                    cycles = cycles + 0
+        else:
+            if(operator == "<"):
+                outputText.insert(END, "MOV R{}, {}".format(len(registerList), register2))
+                outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+                cycles = cycles + 0
+            elif(operator == ">"):
+                outputText.insert(END, "MOV R{}, {}".format(len(registerList), register2))
+                outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+                cycles = cycles + 0
+            elif(operator == "=="):
+                outputText.insert(END, "MOV R{}, {}".format(len(registerList), register2))
+                outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+                cycles = cycles + 0
         algorithm.pop(0)
         while(algorithm[0] != "}"):
             cycles = registerToConstant(algorithm[0], cycles)
@@ -469,6 +501,11 @@ def branch(algorithm, cycles):
             cycles = divRegisterToConstant(algorithm[0], cycles)
             cycles = divRegisterToRegister(algorithm[0], cycles)
             cycles = divConstantToConstant(algorithm[0], cycles)    
+            algorithm.pop(0)
+        outputText.config(state = NORMAL)
+        outputText.insert(END, "ELSE{}: ".format(counterList[0]))
+        outputText.config(state = DISABLED)
+    return cycles
 
 def compiler(cycles):
     algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
@@ -479,6 +516,7 @@ def compiler(cycles):
             if(register not in registerList):
                 registerList.append(register)
     while(algorithm != [] and cycles != 0):
+        cycles = branch(algorithm, cycles)
         cycles = registerToConstant(algorithm[0], cycles)
         cycles = registerToRegister(algorithm[0], cycles)
         cycles = addRegisterToConstant(algorithm[0], cycles)
@@ -496,11 +534,13 @@ def compiler(cycles):
         algorithm.pop(0)
     if(cycles == 0):
         print("Asegurese de declarar todas las variables.")
-    print(registerList)
     return cycles
         
 def translate():
     cycles = 1
+    outputText.config(state = NORMAL)
+    outputText.delete("1.0", END)
+    outputText.config(state = DISABLED)
     if(inputText.get("1.0", END) != "\n"):
         cycles = compiler(cycles)
     print(cycles)
