@@ -57,11 +57,13 @@ def validAlgorithm():
 
 def branchWhile(algorithm, cycles):
 	if(re.match("^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$", algorithm[0])):
+		outputText.config(state = NORMAL)
 		instruction = re.match("^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$", algorithm[0])
 		condition = instruction.group(1)
 		register1 = instruction.group(2)
 		operator = instruction.group(3)
 		register2 = instruction.group(4)
+		currentElse = counterList[0]
 		if(condition == "if"):
 			if(register2.isdigit() == 0 and register1.isdigit() == 0):
 				if(operator == "<"):
@@ -102,14 +104,14 @@ def branchWhile(algorithm, cycles):
 			while(algorithm[0] != "}"):
 				cycles = branchWhile(algorithm, cycles)
 				algorithm.pop(0)
-				outputText.config(state = NORMAL)
-				outputText.insert(END, "ELSE{}: ".format(currentElse))
-				outputText.config(state = DISABLED)
+			outputText.config(state = NORMAL)
+			outputText.insert(END, "ELSE{}: ".format(currentElse))
+			outputText.config(state = DISABLED)
 			algorithm.pop(0)
 	return cycles
 
 def compiler(cycles):
-	algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
+	algorithm = (inputText.get("1.0", END)).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
 	print()
 	for line in algorithm:
 		if(re.match("^(int)\s*([A-z]+[0-9]*)$", line)):
@@ -122,7 +124,6 @@ def compiler(cycles):
 	outputText.config(state = DISABLED)
 	while(algorithm != [] and cycles != 0):
 		cycles = branchWhile(algorithm, cycles)
-		print(algorithm)
 		algorithm.pop(0)
 	return cycles
 
