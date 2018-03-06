@@ -66,7 +66,10 @@ def compiler(cycles):
     outputText.config(state = NORMAL)
     outputText.insert(END, "MOV R0, 0")
     outputText.config(state = DISABLED)
-
+    while(algorithm != [] and cycles != 0):
+    	cycles = branchWhile(algorithm, cycles)
+    	algorithm.pop(0)
+    return cycles
 
 def translate():
     cycles = 1
