@@ -55,67 +55,122 @@ def validAlgorithm():
 	ifWhile = "^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$"
 	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([+|-|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$"
 
+def branchWhile(algorithm, cycles):
+	if(re.match("^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$", algorithm[0])):
+		instruction = re.match("^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$", algorithm[0])
+		condition = instruction.group(1)
+		register1 = instruction.group(2)
+		operator = instruction.group(3)
+		register2 = instruction.group(4)
+		if(condition == "if"):
+			if(register2.isdigit() == 0 and register1.isdigit() == 0):
+				if(operator == "<"):
+					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					cycles = cycles + 0
+				elif(operator == ">"):
+					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					cycles = cycles + 0
+				elif(operator == "=="):
+					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					cycles = cycles + 0
+				elif(operator == "!="):
+					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
+					cycles = cycles + 0
+				counterList[0] = counterList[0] + 1
+			elif(register2.isdigit() == 1 and register1.isdigit() == 0):
+				outputText.insert(END, "MOV R{}, {}\n".format(len(registerList), register2))
+				if(operator == "<"):
+					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					cycles = cycles + 0
+				elif(operator == ">"):
+					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					cycles = cycles + 0
+				elif(operator == "=="):
+					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					cycles = cycles + 0
+				elif(operator == "!="):
+					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
+					cycles = cycles + 0
+				counterList[0] = counterList[0] + 1
+			algorithm.pop(0)
+			while(algorithm[0] != "}"):
+				cycles = branchWhile(algorithm, cycles)
+				algorithm.pop(0)
+				outputText.config(state = NORMAL)
+				outputText.insert(END, "ELSE{}: ".format(currentElse))
+				outputText.config(state = DISABLED)
+			algorithm.pop(0)
+	return cycles
+
 def compiler(cycles):
-    algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
-    for line in algorithm:
-        if(re.match("^(int)\s*([A-z]+[0-9]*)$", line)):
-            instruction = re.match("^(int)\s*([A-z]+[0-9]*)$", line)
-            register = instruction.group(2)
-            if(register not in registerList):
-                registerList.append(register)
-    outputText.config(state = NORMAL)
-    outputText.insert(END, "MOV R0, 0")
-    outputText.config(state = DISABLED)
-    while(algorithm != [] and cycles != 0):
-    	cycles = branchWhile(algorithm, cycles)
-    	algorithm.pop(0)
-    return cycles
+	algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
+	print()
+	for line in algorithm:
+		if(re.match("^(int)\s*([A-z]+[0-9]*)$", line)):
+			instruction = re.match("^(int)\s*([A-z]+[0-9]*)$", line)
+			register = instruction.group(2)
+			if(register not in registerList):
+				registerList.append(register)
+	outputText.config(state = NORMAL)
+	outputText.insert(END, "MOV R0, 0")
+	outputText.config(state = DISABLED)
+	while(algorithm != [] and cycles != 0):
+		cycles = branchWhile(algorithm, cycles)
+		print(algorithm)
+		algorithm.pop(0)
+	return cycles
 
 def translate():
-    cycles = 1
-    outputText.config(state = NORMAL)
-    outputText.delete("1.0", END)
-    outputText.config(state = DISABLED)
-    counterList = [0, 0, 0]
-    if(inputText.get("1.0", END) != "\n"):
-        cycles = compiler(cycles)
-    outputFile = open("output.txt", "w")
-    outputFile.write(outputText.get("1.0", "end-1c"))
-    outputFile.close()
-    #print(cycles)
+	cycles = 1
+	outputText.config(state = NORMAL)
+	outputText.delete("1.0", END)
+	outputText.config(state = DISABLED)
+	counterList = [0, 0, 0]
+	if(inputText.get("1.0", END) != "\n"):
+		cycles = compiler(cycles)
+	outputFile = open("output.txt", "w")
+	outputFile.write(outputText.get("1.0", "end-1c"))
+	outputFile.close()
+	#print(cycles)
 
 def clear():
-    """Procedure that clears all the text boxes."""
-    inputText.delete("1.0", END)
-    outputText.config(state = NORMAL)
-    outputText.delete("1.0", END)
-    outputText.config(state = DISABLED)
-    periodText.config(state = NORMAL)
-    periodText.delete("1.0", END)
-    periodText.config(state = DISABLED)
-    frequencyText.config(state = NORMAL)
-    frequencyText.delete("1.0", END)
-    frequencyText.config(state = DISABLED)
-    execText.config(state = NORMAL)
-    execText.delete("1.0", END)
-    execText.config(state = DISABLED)
-    registerList = []
-    counterList = [0, 0, 0]
-    
+	"""Procedure that clears all the text boxes."""
+	inputText.delete("1.0", END)
+	outputText.config(state = NORMAL)
+	outputText.delete("1.0", END)
+	outputText.config(state = DISABLED)
+	periodText.config(state = NORMAL)
+	periodText.delete("1.0", END)
+	periodText.config(state = DISABLED)
+	frequencyText.config(state = NORMAL)
+	frequencyText.delete("1.0", END)
+	frequencyText.config(state = DISABLED)
+	execText.config(state = NORMAL)
+	execText.delete("1.0", END)
+	execText.config(state = DISABLED)
+	registerList = []
+	counterList = [0, 0, 0]
+
 def period():
-    """Procedure that enables the periodText text box and clears the frequencyText text box."""
-    frequencyText.config(state = NORMAL)
-    frequencyText.delete("1.0", END)
-    frequencyText.config(state = DISABLED)
-    periodText.config(state = NORMAL)
+	"""Procedure that enables the periodText text box and clears the frequencyText text box."""
+	frequencyText.config(state = NORMAL)
+	frequencyText.delete("1.0", END)
+	frequencyText.config(state = DISABLED)
+	periodText.config(state = NORMAL)
 
 def frequency():
-    """Procedure that enables the frequencyText text box and clears the frequencyText text box."""
-    periodText.config(state = NORMAL)
-    periodText.delete("1.0", END)
-    periodText.config(state = DISABLED)
-    frequencyText.config(state = NORMAL)
-    
+	"""Procedure that enables the frequencyText text box and clears the frequencyText text box."""
+	periodText.config(state = NORMAL)
+	periodText.delete("1.0", END)
+	periodText.config(state = DISABLED)
+	frequencyText.config(state = NORMAL)
+
 translateButton = Button(text = "Traducir", font = ("Inconsolata", 12), command = translate)
 translateButton.place(x = 365, y = 250)
 clearButton = Button(text = "Limpiar", font = ("Inconsolata", 12), command = clear)
