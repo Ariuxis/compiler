@@ -46,12 +46,14 @@ counterList = [0, 0, 0] # First position corresponds to if, second to for, third
 frequency = 0
 period = 0
 
+# Register = \s*([A-z]+[0-9]*)\s*=\s*
+# Alphanumeric or numeric ([A-z]+[0-9]*|[0-9]+)
+
 def validAlgorithm():
 	algorithm = (inputText.get("1.0", "end-1c")).split("\n")
-	assign = "^([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)$"
-	init = "^(int)\s*([A-z]+[0-9]*)$"
+	init = "^\s*(int)\s*([A-z]+[0-9]*)$"
 	ifWhile = "^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$"
-
+	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([+|-|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$"
 
 def compiler(cycles):
     algorithm = (inputText.get("1.0", "end-1c")).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
