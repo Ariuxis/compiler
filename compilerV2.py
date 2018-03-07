@@ -66,53 +66,48 @@ def branchWhile(algorithm, cycles):
 		currentElse = counterList[0]
 		if(condition == "if"):
 			if(register2.isdigit() == 0 and register1.isdigit() == 0):
-				if(operator == "<"):
-					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					cycles = cycles + 0
-				elif(operator == ">"):
-					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					cycles = cycles + 0
-				elif(operator == "=="):
-					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					cycles = cycles + 0
-				elif(operator == "!="):
-					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), registerList.index(register2), counterList[0]))
-					cycles = cycles + 0
-				counterList[0] = counterList[0] + 1
+				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+				outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
+				cycles = cycles + 0
 			elif(register2.isdigit() == 1 and register1.isdigit() == 0):
-				outputText.insert(END, "MOV R{}, {}\n".format(len(registerList), register2))
-				if(operator == "<"):
-					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					cycles = cycles + 0
-				elif(operator == ">"):
-					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					cycles = cycles + 0
-				elif(operator == "=="):
-					outputText.insert(END, "BRM R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					outputText.insert(END, "BRME R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					cycles = cycles + 0
-				elif(operator == "!="):
-					outputText.insert(END, "BRI R{}, R{}, ELSE{}\n".format(registerList.index(register1), len(registerList), counterList[0]))
-					cycles = cycles + 0
-				counterList[0] = counterList[0] + 1
+				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+				outputText.insert(END, "MOV R2, {}\n".format(register2))
+				cycles = cycles + 0
+			elif(register2.isdigit() == 0 and register1.isdigit() == 1):
+				outputText.insert(END, "MOV R1, {}\n".format(register1))
+				outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
+				cycles = cycles + 0
+			elif(register2.isdigit() == 1 and register2.isdigit() == 1):
+				outputText.insert(END, "MOV R1, {}\n".format(register1))
+				outputText.insert(END, "MOV R2, {}\n".format(register2))
+				cycles = cycles + 0
+			if(operator == "<"):
+				outputText.insert(END, "BRM R1, R2, ELSE{}\n".format(counterList[0]))
+				outputText.insert(END, "BRI R1, R2, ELSE{}\n".format(counterList[0]))
+				cycles = cycles + 0
+			elif(operator == ">"):
+				outputText.insert(END, "BRME R1, R2, ELSE{}\n".format(counterList[0]))
+				outputText.insert(END, "BRI R1, R2, ELSE{}\n".format(counterList[0]))
+				cycles = cycles + 0
+			elif(operator == "=="):
+				outputText.insert(END, "BRM R1, R2, ELSE{}\n".format(counterList[0]))
+				outputText.insert(END, "BRME R1, R2, ELSE{}\n".format(counterList[0]))
+				cycles = cycles + 0
+			elif(operator == "!="):
+				outputText.insert(END, "BRI R1, R2, ELSE{}\n".format(counterList[0]))
+				cycles = cycles + 0
+			counterList[0] = counterList[0] + 1
 			algorithm.pop(0)
 			while(algorithm[0] != "}"):
 				cycles = branchWhile(algorithm, cycles)
 				algorithm.pop(0)
 			outputText.config(state = NORMAL)
-			outputText.insert(END, "ELSE{}: ".format(currentElse))
+			outputText.insert(END, "ELSE{}:\n".format(currentElse))
 			outputText.config(state = DISABLED)
-			algorithm.pop(0)
 	return cycles
 
 def compiler(cycles):
 	algorithm = (inputText.get("1.0", END)).split("\n") # Splits the algorithm that was written into the input text box and stores it in an array.
-	print()
 	for line in algorithm:
 		if(re.match("^(int)\s*([A-z]+[0-9]*)$", line)):
 			instruction = re.match("^(int)\s*([A-z]+[0-9]*)$", line)
@@ -120,7 +115,7 @@ def compiler(cycles):
 			if(register not in registerList):
 				registerList.append(register)
 	outputText.config(state = NORMAL)
-	outputText.insert(END, "MOV R0, 0")
+	outputText.insert(END, "MOV R0, 0\n")
 	outputText.config(state = DISABLED)
 	while(algorithm != [] and cycles != 0):
 		cycles = branchWhile(algorithm, cycles)
@@ -133,6 +128,7 @@ def translate():
 	outputText.delete("1.0", END)
 	outputText.config(state = DISABLED)
 	counterList = [0, 0, 0]
+	registerList = []
 	if(inputText.get("1.0", END) != "\n"):
 		cycles = compiler(cycles)
 	outputFile = open("output.txt", "w")
