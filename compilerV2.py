@@ -66,66 +66,61 @@ def branchWhile(algorithm, cycles):
 		currentElse = counterList[0]
 		currentWhile = counterList[1]
 		currentEndWhile = counterList[2]
+		markup = ""
+		markupIndex = -1
 		if(condition == "if"):
-			if(register2.isdigit() == 0 and register1.isdigit() == 0):
-				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
-				outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
-				cycles = cycles + 0
-			elif(register2.isdigit() == 1 and register1.isdigit() == 0):
-				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
-				outputText.insert(END, "MOV R2, {}\n".format(register2))
-				cycles = cycles + 0
-			elif(register2.isdigit() == 0 and register1.isdigit() == 1):
-				outputText.insert(END, "MOV R1, {}\n".format(register1))
-				outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
-				cycles = cycles + 0
-			elif(register2.isdigit() == 1 and register2.isdigit() == 1):
-				outputText.insert(END, "MOV R1, {}\n".format(register1))
-				outputText.insert(END, "MOV R2, {}\n".format(register2))
-				cycles = cycles + 0
-			if(operator == "<"):
-				outputText.insert(END, "BRM R1, R2, ELSE{}\n".format(counterList[0]))
-				outputText.insert(END, "BRI R1, R2, ELSE{}\n".format(counterList[0]))
-				cycles = cycles + 0
-			elif(operator == ">"):
-				outputText.insert(END, "BRME R1, R2, ELSE{}\n".format(counterList[0]))
-				outputText.insert(END, "BRI R1, R2, ELSE{}\n".format(counterList[0]))
-				cycles = cycles + 0
-			elif(operator == "=="):
-				outputText.insert(END, "BRM R1, R2, ELSE{}\n".format(counterList[0]))
-				outputText.insert(END, "BRME R1, R2, ELSE{}\n".format(counterList[0]))
-				cycles = cycles + 0
-			elif(operator == "!="):
-				outputText.insert(END, "BRI R1, R2, ELSE{}\n".format(counterList[0]))
-				cycles = cycles + 0
+			markup = "ELSE"
+			markupIndex = currentElse
 			counterList[0] = counterList[0] + 1
 			algorithm.pop(0)
-			while(algorithm[0] != "}"):
-				cycles = branchWhile(algorithm, cycles)
-				algorithm.pop(0)
-			outputText.config(state = NORMAL)
-			outputText.insert(END, "ELSE{}:\n".format(currentElse))
-			outputText.config(state = DISABLED)
 		if(condition == "while"):  # WIP While conditional
-			outputText.insert(END, "WHILE{}: ".format(currentWhile))
-			if(register2.isdigit() == 0 and register1.isdigit() == 0):
-				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
-				outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
-				cycles = cycles + 0
-			if(operator == "<"):
-				outputText.insert(END, "BRM R1, R2, ENDWHILE{}\n".format(currentEndWhile))
-				outputText.insert(END, "BRI R1, R2, ENDWHILE{}\n".format(currentEndWhile))
-				cycles = cycles + 0
+			markup = "ENDWHILE"
+			markupIndex = currentEndWhile
 			counterList[1] = counterList[1] + 1
 			counterList[2] = counterList[2] + 1
+			outputText.insert(END, "WHILE{}: ".format(currentWhile))
 			algorithm.pop(0)
-			while(algorithm[0] != "}"):
-				cycles = branchWhile(algorithm, cycles)
-				algorithm.pop(0)
-			outputText.config(state = NORMAL)
-			outputText.insert(END, "JUMP WHILE{}\n".format(currentWhile))
-			outputText.insert(END, "ENDWHILE{}: ".format(currentEndWhile))
-			outputText.config(state = DISABLED)
+		if(register2.isdigit() == 0 and register1.isdigit() == 0):
+			outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+			outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
+			cycles = cycles + 0
+		elif(register2.isdigit() == 1 and register1.isdigit() == 0):
+			outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+			outputText.insert(END, "MOV R2, {}\n".format(register2))
+			cycles = cycles + 0
+		elif(register2.isdigit() == 0 and register1.isdigit() == 1):
+			outputText.insert(END, "MOV R1, {}\n".format(register1))
+			outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
+			cycles = cycles + 0
+		elif(register2.isdigit() == 1 and register2.isdigit() == 1):
+			outputText.insert(END, "MOV R1, {}\n".format(register1))
+			outputText.insert(END, "MOV R2, {}\n".format(register2))
+			cycles = cycles + 0
+		if(operator == "<"):
+			outputText.insert(END, "BRM R1, R2, {}{}\n".format(markup, markupIndex))
+			outputText.insert(END, "BRI R1, R2, {}{}\n".format(markup, markupIndex))
+			cycles = cycles + 0
+		elif(operator == ">"):
+			outputText.insert(END, "BRME R1, R2, {}{}\n".format(markup, markupIndex))
+			outputText.insert(END, "BRI R1, R2, {}{}\n".format(markup, markupIndex))
+			cycles = cycles + 0
+		elif(operator == "=="):
+			outputText.insert(END, "BRM R1, R2, {}{}\n".format(markup, markupIndex))
+			outputText.insert(END, "BRME R1, R2, {}{}\n".format(markup, markupIndex))
+			cycles = cycles + 0
+		elif(operator == "!="):
+			outputText.insert(END, "BRI R1, R2, {}{}\n".format(markup, markupIndex))
+			cycles = cycles + 0
+		while(algorithm[0] != "}"):
+			cycles = branchWhile(algorithm, cycles)
+			algorithm.pop(0)
+		outputText.config(state = NORMAL)
+		if(condition == "while"):
+			outputText.insert(END, "JUMP WHILE{}\n".format(markupIndex))
+			outputText.insert(END, "ENDWHILE{}: ".format(markupIndex))
+		elif(condition == "if"):
+			outputText.insert(END, "ELSE{}: \n".format(markupIndex))
+		outputText.config(state = DISABLED)
 	return cycles
 
 def compiler(cycles):
