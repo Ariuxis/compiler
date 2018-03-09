@@ -64,6 +64,8 @@ def branchWhile(algorithm, cycles):
 		operator = instruction.group(3)
 		register2 = instruction.group(4)
 		currentElse = counterList[0]
+		currentWhile = counterList[1]
+		currentEndWhile = counterList[2]
 		if(condition == "if"):
 			if(register2.isdigit() == 0 and register1.isdigit() == 0):
 				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
@@ -104,6 +106,26 @@ def branchWhile(algorithm, cycles):
 			outputText.config(state = NORMAL)
 			outputText.insert(END, "ELSE{}:\n".format(currentElse))
 			outputText.config(state = DISABLED)
+		if(condition == "while"):  # WIP While conditional
+			outputText.insert(END, "WHILE{}: ".format(currentWhile))
+			if(register2.isdigit() == 0 and register1.isdigit() == 0):
+				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+				outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
+				cycles = cycles + 0
+			if(operator == "<"):
+				outputText.insert(END, "BRM R1, R2, ENDWHILE{}\n".format(currentEndWhile))
+				outputText.insert(END, "BRI R1, R2, ENDWHILE{}\n".format(currentEndWhile))
+				cycles = cycles + 0
+			counterList[1] = counterList[1] + 1
+			counterList[2] = counterList[2] + 1
+			algorithm.pop(0)
+			while(algorithm[0] != "}"):
+				cycles = branchWhile(algorithm, cycles)
+				algorithm.pop(0)
+			outputText.config(state = NORMAL)
+			outputText.insert(END, "JUMP WHILE{}\n".format(currentWhile))
+			outputText.insert(END, "ENDWHILE{}: ".format(currentEndWhile))
+			outputText.config(state = DISABLED)
 	return cycles
 
 def compiler(cycles):
@@ -127,7 +149,8 @@ def translate():
 	outputText.config(state = NORMAL)
 	outputText.delete("1.0", END)
 	outputText.config(state = DISABLED)
-	counterList = [0, 0, 0]
+	for i in counterList:
+		counterList[i] = 0
 	registerList = []
 	if(inputText.get("1.0", END) != "\n"):
 		cycles = compiler(cycles)
