@@ -50,53 +50,96 @@ period = 0
 # Alphanumeric or numeric ([A-z]+[0-9]*|[0-9]+)
 
 def operations(line, cycles):
-	if(re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([+|-|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$", line)):
+	if(re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$", line)):
 		outputText.config(state = NORMAL)
-		temporal = line.strip()
-		operator = []
-		operand = [] # First position is always the source register.
-		operand.append(temporal[0])
-		value = ""
-		for index in range(len(temporal) - 1):
-			if(re.match("^([+|-|*|/])$", temporal[index + 1])):
-				operator.append(temporal[index + 1])
-				operand.append(value)
-				value = ""
-			elif(re.match("^([A-z]+[0-9]*|[0-9]+)", temporal[index + 1])):
-				value = value + temporal[index + 1]
-		operand.append(value)
-		index = 0
-		while(operator != []):
-			if("*" in operator or "/" in operator):
-				if(operator[index] == "*" or operator[index] == "/"):
-					if(operand[index].isdigit() == 0 and operand[index + 1].isdigit() == 0):
-						outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(operand[index])))
-						outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(operand[index + 1])))
-					elif(operand[index].isdigit() == 0 and operand[index + 1].isdigit() == 1):
-						outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(operand[index])))
-						outputText.insert(END, "MOV R2, {}\n".format(operand[index + 1]))
-					elif(operand[index].isdigit() == 1 and operand[index + 1].isdigit() == 0):
-						outputText.insert(END, "MOV R1, {}\n".format(operand[index]))
-						outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(operand[index + 1])))
-					elif(operand[index].isdigit() == 1 and operand[index + 1].isdiigt() == 1):
-						outputText.insert(END, "MOV R1, {}\n".format(operand[index]))
-						outputText.insert(END, "MOV R2, {}\n".format(operand[index + 1]))
-					if(operator[index] == "*"):
-						outputText.insert(END, "MUL R1, R2")
-					operator.pop(0)
-					index = 0
-					continue
-				index = index + 1
-				pass
+		instruction = re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$", line)
+		if(instruction.group(3) != None):
+			temporal = re.sub("\s*", "", line)
+			operator = re.split("[A-z]+[0-9]*|[0-9]+", temporal)
+			operand = re.split("[-|=|+|*|/]", temporal) # Search re.split function in regexp to improve
+			operator.pop(len(operator) - 1)
+			operator.pop(0)
+			operator.pop(0)
+			counter = 3
+			index = 0
+			while(operator != []):
+				if("*" in operator or "/" in operator):
+					if(operator[index] == "*" or operator[index] == "/"):
+						if(operand[index + 1] in registerList):
+							outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(operand[index + 1])))
+							cycles = cycles + 0
+						else:
+							outputText.insert(END, "MOV R1, {}\n".format(operand[index + 1]))
+							cycles = cycles + 0
+						if(operand[index + 2] in registerList):
+							outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(operand[index + 2])))
+							cycles = cycles + 0
+						else:
+							outputText.insert(END, "MOV R2, {}\n".format(operand[index + 2]))
+							cycles = cycles + 0
+						if(operator[index] == "*"):
+							outputText.insert(END, "MUL R1, R2\n")
+						else:
+							outputText.insert(END, "DIV R1, R2\n")
+						outputText.insert(END, "MOV R{}, R1\n".format(counter))
+						cycles = cycles + 0
+						operator.pop(index)
+						operand.pop(index + 1)
+						operand.pop(index + 1)
+						operand.insert(index + 1, "R{}".format(counter))
+						index = 0
+						counter = counter + 1
+						continue
+					index = index + 1
+				else:
+					if(operator[index] == "+" or operator[index] == "-"):
+						if(operand[index + 1] in registerList):
+							outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(operand[index + 1])))
+							cycles = cycles + 0
+						else:
+							outputText.insert(END, "MOV R1, {}\n".format(operand[index + 1]))
+							cycles = cycles + 0
+						if(operand[index + 2] in registerList):
+							outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(operand[index + 2])))
+							cycles = cycles + 0
+						else:
+							outputText.insert(END, "MOV R2, {}\n".format(operand[index + 2]))
+							cycles = cycles + 0
+						if(operator[index] == "+"):
+							outputText.insert(END, "ADD R1, R2\n")
+						else:
+							outputText.insert(END, "SUB R1, R2\n")
+						outputText.insert(END, "MOV R{}, R1\n".format(counter))
+						cycles = cycles + 0
+						operator.pop(index)
+						operand.pop(index + 1)
+						operand.pop(index + 1)
+						operand.insert(index + 1, "R{}".format(counter))
+						index = 0
+						counter = counter + 1
+						continue
+					index = index + 1
+			outputText.insert(END, "MOV [R0 + {}], R{}\n".format(registerList.index(operand[0]), counter - 1))
+			cycles = cycles + 0
+		else:
+			register1 = instruction.group(1)
+			register2 = instruction.group(2)
+			if(register2 in registerList):
+				outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register2)))
+				cycles = cycles + 0
+			else:
+				outputText.insert(END, "MOV R1, {}\n".format(register2))
+				cycles = cycles + 0
+			outputText.insert(END, "MOV [R0 + {}], R1\n".format(registerList.index(register1)))
+			cycles = cycles + 0
 		outputText.config(state = DISABLED)
-		print(operator)
-		return cycles
+	return cycles
 
 def validAlgorithm():
 	algorithm = (inputText.get("1.0", "end-1c")).split("\n")
 	init = "^\s*(int)\s*([A-z]+[0-9]*)$"
 	ifWhile = "^\s*(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$"
-	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([+|-|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$"
+	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$"
 
 def branchWhile(algorithm, cycles):
 	if(re.match("^(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$", algorithm[0])):
@@ -123,20 +166,16 @@ def branchWhile(algorithm, cycles):
 			counterList[2] = counterList[2] + 1
 			outputText.insert(END, "WHILE{}: ".format(currentWhile))
 			algorithm.pop(0)
-		if(register2.isdigit() == 0 and register1.isdigit() == 0):
+		if(register1 in registerList):
 			outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+			cycles = cycles + 0
+		else:
+			outputText.insert(END, "MOV R1, {}\n".format(register1))
+			cycles = cycles + 0
+		if(register2 in registerList):
 			outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
 			cycles = cycles + 0
-		elif(register2.isdigit() == 1 and register1.isdigit() == 0):
-			outputText.insert(END, "MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
-			outputText.insert(END, "MOV R2, {}\n".format(register2))
-			cycles = cycles + 0
-		elif(register2.isdigit() == 0 and register1.isdigit() == 1):
-			outputText.insert(END, "MOV R1, {}\n".format(register1))
-			outputText.insert(END, "MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
-			cycles = cycles + 0
-		elif(register2.isdigit() == 1 and register1.isdigit() == 1):
-			outputText.insert(END, "MOV R1, {}\n".format(register1))
+		else:
 			outputText.insert(END, "MOV R2, {}\n".format(register2))
 			cycles = cycles + 0
 		if(operator == "<"):
@@ -156,12 +195,15 @@ def branchWhile(algorithm, cycles):
 			cycles = cycles + 0
 		while(algorithm[0] != "}"):
 			cycles = branchWhile(algorithm, cycles)
+			cycles = operations(algorithm[0], cycles)
 			algorithm.pop(0)
 		outputText.config(state = NORMAL)
 		if(condition == "while"):
 			outputText.insert(END, "JUMP WHILE{}\n".format(currentWhile))
 		outputText.insert(END, "{}{}: ".format(markup, markupIndex))
 		outputText.config(state = DISABLED)
+	for i in counterList:
+		counterList[i] = 0
 	return cycles
 	
 def compiler(cycles):
@@ -177,7 +219,7 @@ def compiler(cycles):
 	outputText.config(state = DISABLED)
 	while(algorithm != [] and cycles != 0):
 		cycles = branchWhile(algorithm, cycles)
-		#operations(algorithm[0], cycles)
+		cycles = operations(algorithm[0], cycles)
 		algorithm.pop(0)
 	return cycles
 
@@ -186,8 +228,6 @@ def translate():
 	outputText.config(state = NORMAL)
 	outputText.delete("1.0", END)
 	outputText.config(state = DISABLED)
-	for i in counterList:
-		counterList[i] = 0
 	registerList = []
 	if(inputText.get("1.0", END) != "\n"):
 		cycles = compiler(cycles)
