@@ -139,10 +139,20 @@ def operations(line, cycles):
 
 def forInstruction(algorithm, cycles):
 	alphanumeric = "\s*([A-z]+[0-9]*|[0-9]+)\s*"
-	operations = "\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*\s*"
-	forExpression = "^\s*for[(]\s*([A-z]+[0-9]*)\s*="
-	expression = forExpression + alphanumeric + ";" + alphanumeric + "(<|>|!=|==)" + alphanumeric + ";" + operations + "[)]\s*{\s*$"
+	operations = "\s*(([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*)\s*"
+	forExpression = "^\s*for[(]" + operations
+	expression = forExpression + ";" + alphanumeric + "(<|>|!=|==)" + alphanumeric + ";" + operations + "[)]\s*{\s*$"
 	if(re.match(expression, algorithm[0])):
+		outputText.config(state = NORMAL)
+		print("in")
+		instruction = re.match(expression, algorithm[0])
+		operations1 = instruction.group(1)
+		register1 = instruction.group(7)
+		operator = instruction.group(8)
+		register2 = instruction.group(9)
+		operations2 = instruction.group(10)
+		cycles = operations(operations1, cycles)
+	return cycles
 
 
 def matching(char1, char2):
@@ -172,19 +182,45 @@ def balanced(line):
 		bracketFlag = 0
 	return bracketFlag
 
+def validOperations(operations, line, grouping, lineNumber, groupBool):
+	instruction = re.match(operations, line)
+	flag = 1
+	if(instruction.group(grouping) != None):
+		temporal = re.sub("\s*", "", line)
+		operand = re.split("[-|=|+|*|/|;]", temporal)
+		operand.pop(len(operand) - 1)
+		for register in operand:
+			if(register.isdigit() == 0 and register not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register))
+	else:
+		if(groupBool == 0):
+			register1 = instruction.group(1)
+			register2 = instruction.group(2)
+		else:
+			register1 = instruction.group(2)
+			register2 = instruction.group(3)
+		if(register1 not in registerList):
+			flag = 0
+			outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register1))
+		if(register2.isdigit() == 0 and register2 not in registerList):
+			flag = 0
+			outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
+	return flag
+
 def validAlgorithm(algorithm):
 	tmpAlgorithm = algorithm
 	init = "^\s*(int)\s*([A-z]+[0-9]*);\s*$"
 	ifWhile = "^\s*(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{\s*$"
-	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
+	operationExp = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
 	doExp = "^\s*do\s*{\s*$"
 	doWhileExp = "^\s*}\s*while[(]\s*(	|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*$"
 	closingBracket = "^\s*}$"
 	spaces = "^\s*$"
 	alphanumeric = "\s*([A-z]+[0-9]*|[0-9]+)\s*"
-	forOp = "\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*\s*"
-	forExpression = "^\s*for[(]\s*([A-z]+[0-9]*)\s*="
-	expression = forExpression + alphanumeric + ";" + alphanumeric + "(<|>|!=|==)" + alphanumeric + ";" + forOp + "[)]\s*{\s*$"
+	forOp = "\s*(([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*)\s*"
+	forExpression = "^\s*for[(]" + forOp
+	expression = forExpression + ";" + alphanumeric + "(<|>|!=|==)" + alphanumeric + ";" + forOp + "[)]\s*{\s*$"
 	flag = 0
 	bracketFlag = 1
 	lineNumber = 1
@@ -199,25 +235,8 @@ def validAlgorithm(algorithm):
 			register = instruction.group(2)
 			if(register not in registerList):
 				registerList.append(register)
-		elif(re.match(operations, tmpAlgorithm[0])):
-			flag = 1
-			instruction = re.match(operations, tmpAlgorithm[0])
-			if(instruction.group(3) != None):
-				temporal = re.sub("\s*", "", tmpAlgorithm[0])
-				operand = re.split("[-|=|+|*|/]", temporal)
-				for register in operand:
-					if(register.isdigit() == 0 and register not in registerList):
-						flag = 0
-						outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register))
-			else:
-				register1 = instruction.group(1)
-				register2 = instruction.group(2)
-				if(register1 not in registerList):
-					flag = 0
-					outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register1))
-				if(register2.isdigit() == 0 and register2 not in registerList):
-					flag = 0
-					outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
+		elif(re.match(operationExp, tmpAlgorithm[0])):
+			flag = validOperations(operationExp, tmpAlgorithm[0], 3, lineNumber, 0)
 		elif(re.match(ifWhile, tmpAlgorithm[0])):
 			flag = 1
 			instruction = re.match(ifWhile, tmpAlgorithm[0])
@@ -253,11 +272,28 @@ def validAlgorithm(algorithm):
 			flag = 1
 			bracketFlag = balanced(tmpAlgorithm[0])
 			doWhileFlag = 0
+		elif(re.match(expression, tmpAlgorithm[0])):
+			instruction = re.match(expression, tmpAlgorithm[0])
+			operations1 = instruction.group(1)
+			register1 = instruction.group(7)
+			register2 = instruction.group(9)
+			operations2 = instruction.group(10)
+			flag = validOperations(forOp, operations1, 4, lineNumber, 1)
+			flag = validOperations(forOp, operations2, 4, lineNumber, 1)
+			if(register1.isdigit() == 0 and register1 not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register1))
+			if(register2.isdigit() == 0 and register2 not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
+			bracketFlag = balanced(tmpAlgorithm[0])
 		elif(re.match(spaces, tmpAlgorithm[0])):
 			flag = 1
 		else:
 			syntaxFlag = 1
 			outputText.insert(END, "SyntaxError at line {}: invalid syntax.\n".format(lineNumber))
+		if(flag == 0):
+			syntaxFlag = 1
 		lineNumber = lineNumber + 1
 		tmpAlgorithm.pop(0)
 	if(bracketFlag == 0):
@@ -403,6 +439,7 @@ def compiler(cycles):
 			cycles = branchWhile(algorithm, cycles)
 			cycles = operations(algorithm[0], cycles)
 			cycles = doWhile(algorithm, cycles)
+			cycles = forInstruction(algorithm, cycles)
 			algorithm.pop(0)
 	return cycles
 
