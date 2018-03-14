@@ -46,6 +46,7 @@ execText.config(state = DISABLED)
 # Initialization of variables #
 registerList = []
 counterList = [0, 0, 0, 0, 0]
+balancedList = []
 frequency = 0
 period = 0
 
@@ -136,14 +137,109 @@ def operations(line, cycles):
 		outputText.config(state = DISABLED)
 	return cycles
 
-def validAlgorithm():
-	algorithm = (inputText.get("1.0", "end-1c")).split("\n")
+def matching(char1, char2):
+	if(char1 == "(" and char2 == ")"):
+		return 1
+	elif(char1 == "[" and char2 == "]"):
+		return 1
+	elif(char1 == "{" and char2 == "}"):
+		return 1
+	else:
+		return 0
+
+def balanced(line):
+	for char in line:
+		if(char == "{" or char == "(" or char == "["):
+			balancedList.append(char)
+		elif(char == "}" or char == ")" or char == "]"):
+			if(len(balancedList) == 0):
+				bracketFlag = 0
+				outputText.insert(END, "SyntaxError: missing parentheses.\n")
+				return bracketFlag
+			elif(matching(balancedList.pop(0), char) == 0):
+				bracketFlag = 0
+	if(len(balancedList) == 0):
+		bracketFlag = 1
+	else:
+		bracketFlag = 0
+	return bracketFlag
+
+def validAlgorithm(algorithm):
+	tmpAlgorithm = algorithm
 	init = "^\s*(int)\s*([A-z]+[0-9]*);\s*$"
 	ifWhile = "^\s*(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{\s*$"
 	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
 	doExp = "^\s*do\s*{\s*$"
 	doWhileExp = "^\s*}\s*while[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*$"
 	closingBracket = "^\s*}$"
+	alphanumeric = "^\s*[A-z]+[0-9]*$"
+	spaces = "\s*"
+	flag = 0
+	bracketFlag = 1
+	lineNumber = 1
+	doWhileFlag = 0
+	branchFlag = 0
+	outputText.config(state = NORMAL)
+	while(tmpAlgorithm != []):
+		if(re.match(init, tmpAlgorithm[0])):
+			flag = 1
+			instruction = re.match(init, tmpAlgorithm[0])
+			register = instruction.group(2)
+			if(register not in registerList):
+				registerList.append(register)
+		elif(re.match(operations, tmpAlgorithm[0])):
+			flag = 1
+			instruction = re.match(operations, tmpAlgorithm[0])
+			if(instruction.group(3) != None):
+				temporal = re.sub("\s*", "", tmpAlgorithm[0])
+				operand = re.split("[-|=|+|*|/]", temporal)
+				for register in operand:
+					if(register.isdigit() == 0 and register not in registerList):
+						flag = 0
+						outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register))
+			else:
+				register1 = instruction.group(1)
+				register2 = instruction.group(2)
+				if(register1 not in registerList):
+					flag = 0
+					outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register1))
+				if(register2.isdigit() == 0 and register2 not in registerList):
+					flag = 0
+					outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
+		elif(re.match(ifWhile, tmpAlgorithm[0])):
+			instruction = re.match(ifWhile, tmpAlgorithm[0])
+			register1 = instruction.group(2)
+			register2 = instruction.group(4)
+			if(register1.isdigit() == 0 and register1 not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register1))
+			if(register2.isdigit() == 0 and register2 not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
+			bracketFlag = balanced(tmpAlgorithm[0])
+		elif(re.match(closingBracket, tmpAlgorithm[0])):
+			bracketFlag = balanced(tmpAlgorithm[0])
+		elif(re.match(doWhileExp, tmpAlgorithm[0])):
+			instruction = re.match(doWhile, tmpAlgorithm[0])
+			register1 = instruction.group(1)
+			register2 = instruction.group(3)
+			if(register1.isdigit() == 0 and register1 not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register1))
+			if(register2.isdigit() == 0 and register2 not in registerList):
+				flag = 0
+				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
+			bracketFlag = balanced(tmpAlgorithm[0])
+			doWhileFlag = 0
+		elif(re.match(doExp, tmpAlgorithm[0])):
+			bracketFlag = balanced(tmpAlgorithm[0])
+			doWhileFlag = 1
+		lineNumber = lineNumber + 1
+		tmpAlgorithm.pop(0)
+	if(bracketFlag == 0):
+		flag = 0
+		outputText.insert(END, "SyntaxError: missing parentheses.\n")
+	return flag
 
 def doWhile(algorithm, cycles):
 	if(re.match("^\s*do\s*{\s*$", algorithm[0])):
@@ -269,20 +365,16 @@ def branchWhile(algorithm, cycles):
 	
 def compiler(cycles):
 	algorithm = (inputText.get("1.0", END)).split("\n")
-	for line in algorithm:
-		if(re.match("^\s*(int)\s*([A-z]+[0-9]*);\s*$", line)):
-			instruction = re.match("^(int)\s*([A-z]+[0-9]*);\s*$", line)
-			register = instruction.group(2)
-			if(register not in registerList):
-				registerList.append(register)
-	outputText.config(state = NORMAL)
-	outputText.insert(END, "    MOV R0, 0\n\n")
-	outputText.config(state = DISABLED)
-	while(algorithm != [] and cycles != 0):
-		cycles = branchWhile(algorithm, cycles)
-		cycles = operations(algorithm[0], cycles)
-		cycles = doWhile(algorithm, cycles)
-		algorithm.pop(0)
+	balancedList[:] = []
+	if(validAlgorithm(algorithm)):
+		outputText.config(state = NORMAL)
+		outputText.insert(END, "    MOV R0, 0\n\n")
+		outputText.config(state = DISABLED)
+		"""while(algorithm != [] and cycles != 0):
+			cycles = branchWhile(algorithm, cycles)
+			cycles = operations(algorithm[0], cycles)
+			cycles = doWhile(algorithm, cycles)
+			algorithm.pop(0)"""
 	return cycles
 
 def translate():
@@ -290,7 +382,7 @@ def translate():
 	outputText.config(state = NORMAL)
 	outputText.delete("1.0", END)
 	outputText.config(state = DISABLED)
-	registerList = []
+	registerList[:] = []
 	if(inputText.get("1.0", END) != "\n"):
 		cycles = compiler(cycles)
 	outputFile = open("output.txt", "w")
