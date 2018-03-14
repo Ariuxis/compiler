@@ -137,6 +137,14 @@ def operations(line, cycles):
 		outputText.config(state = DISABLED)
 	return cycles
 
+def forInstruction(algorithm, cycles):
+	alphanumeric = "\s*([A-z]+[0-9]*|[0-9]+)\s*"
+	operations = "\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*\s*"
+	forExpression = "^\s*for[(]\s*([A-z]+[0-9]*)\s*="
+	expression = forExpression + alphanumeric + ";" + alphanumeric + "(<|>|!=|==)" + alphanumeric + ";" + operations + "[)]\s*{\s*$"
+	if(re.match(expression, algorithm[0])):
+
+
 def matching(char1, char2):
 	if(char1 == "(" and char2 == ")"):
 		return 1
@@ -170,15 +178,19 @@ def validAlgorithm(algorithm):
 	ifWhile = "^\s*(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{\s*$"
 	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
 	doExp = "^\s*do\s*{\s*$"
-	doWhileExp = "^\s*}\s*while[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*$"
+	doWhileExp = "^\s*}\s*while[(]\s*(	|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*$"
 	closingBracket = "^\s*}$"
-	alphanumeric = "^\s*[A-z]+[0-9]*$"
-	spaces = "\s*"
+	spaces = "^\s*$"
+	alphanumeric = "\s*([A-z]+[0-9]*|[0-9]+)\s*"
+	forOp = "\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*\s*"
+	forExpression = "^\s*for[(]\s*([A-z]+[0-9]*)\s*="
+	expression = forExpression + alphanumeric + ";" + alphanumeric + "(<|>|!=|==)" + alphanumeric + ";" + forOp + "[)]\s*{\s*$"
 	flag = 0
 	bracketFlag = 1
 	lineNumber = 1
-	doWhileFlag = 0
-	branchFlag = 0
+	doFlag = 1
+	doWhileFlag = 1
+	syntaxFlag = 0
 	outputText.config(state = NORMAL)
 	while(tmpAlgorithm != []):
 		if(re.match(init, tmpAlgorithm[0])):
@@ -207,6 +219,7 @@ def validAlgorithm(algorithm):
 					flag = 0
 					outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
 		elif(re.match(ifWhile, tmpAlgorithm[0])):
+			flag = 1
 			instruction = re.match(ifWhile, tmpAlgorithm[0])
 			register1 = instruction.group(2)
 			register2 = instruction.group(4)
@@ -218,9 +231,11 @@ def validAlgorithm(algorithm):
 				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
 			bracketFlag = balanced(tmpAlgorithm[0])
 		elif(re.match(closingBracket, tmpAlgorithm[0])):
+			flag = 1
 			bracketFlag = balanced(tmpAlgorithm[0])
 		elif(re.match(doWhileExp, tmpAlgorithm[0])):
-			instruction = re.match(doWhile, tmpAlgorithm[0])
+			flag = 1
+			instruction = re.match(doWhileExp, tmpAlgorithm[0])
 			register1 = instruction.group(1)
 			register2 = instruction.group(3)
 			if(register1.isdigit() == 0 and register1 not in registerList):
@@ -230,15 +245,29 @@ def validAlgorithm(algorithm):
 				flag = 0
 				outputText.insert(END, "SyntaxError at line {}: {} has not been declared.\n\n".format(lineNumber, register2))
 			bracketFlag = balanced(tmpAlgorithm[0])
-			doWhileFlag = 0
+			if(doWhileFlag == 0):
+				doWhileFlag = 1
+			else:
+				doFlag = 0
 		elif(re.match(doExp, tmpAlgorithm[0])):
+			flag = 1
 			bracketFlag = balanced(tmpAlgorithm[0])
-			doWhileFlag = 1
+			doWhileFlag = 0
+		elif(re.match(spaces, tmpAlgorithm[0])):
+			flag = 1
+		else:
+			syntaxFlag = 1
+			outputText.insert(END, "SyntaxError at line {}: invalid syntax.\n".format(lineNumber))
 		lineNumber = lineNumber + 1
 		tmpAlgorithm.pop(0)
 	if(bracketFlag == 0):
 		flag = 0
 		outputText.insert(END, "SyntaxError: missing parentheses.\n")
+	if(doFlag == 0 or doWhileFlag == 0):
+		flag = 0
+		outputText.insert(END, "SyntaxError: missing do or while expression.")
+	if(syntaxFlag == 1):
+		flag = 0
 	return flag
 
 def doWhile(algorithm, cycles):
@@ -370,11 +399,11 @@ def compiler(cycles):
 		outputText.config(state = NORMAL)
 		outputText.insert(END, "    MOV R0, 0\n\n")
 		outputText.config(state = DISABLED)
-		"""while(algorithm != [] and cycles != 0):
+		while(algorithm != [] and cycles != 0):
 			cycles = branchWhile(algorithm, cycles)
 			cycles = operations(algorithm[0], cycles)
 			cycles = doWhile(algorithm, cycles)
-			algorithm.pop(0)"""
+			algorithm.pop(0)
 	return cycles
 
 def translate():
