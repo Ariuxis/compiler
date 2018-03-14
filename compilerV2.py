@@ -11,7 +11,8 @@ from tkinter import *
 
 # R0 will be the base address. It will point to the start of the data memory. It starts at the position 0.
 # The memory address which points to the arrays will be 100. Each array has a size of 100.
-# In counterList, first position corresponds to else counter, second to while counter and third to endWhile counter.
+# counterList: first position corresponds to else counter, second to while counter, third to endWhile counter,
+#              fourth to doWhile counter, fifth to doEnd counter.
 # Split the algorithm that was written into the input text box and stores it in an array to start compiling the program.
 
 # Initialization of window with widgets #
@@ -44,15 +45,15 @@ frequencyText.config(state = DISABLED)
 execText.config(state = DISABLED)
 # Initialization of variables #
 registerList = []
-counterList = [0, 0, 0]
+counterList = [0, 0, 0, 0, 0]
 frequency = 0
 period = 0
 
 def operations(line, cycles):
 	"""Function that receives a line of code and applies the appropiate instruction in Von Neumann."""
-	if(re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*\s*$", line)):
+	if(re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$", line)):
 		outputText.config(state = NORMAL)
-		instruction = re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$", line)
+		instruction = re.match("^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;$", line)
 		if(instruction.group(3) != None):
 			temporal = re.sub("\s*", "", line)
 			operator = re.split("[A-z]+[0-9]*|[0-9]+", temporal)
@@ -137,9 +138,64 @@ def operations(line, cycles):
 
 def validAlgorithm():
 	algorithm = (inputText.get("1.0", "end-1c")).split("\n")
-	init = "^\s*(int)\s*([A-z]+[0-9]*)$"
-	ifWhile = "^\s*(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{$"
-	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*$"
+	init = "^\s*(int)\s*([A-z]+[0-9]*);\s*$"
+	ifWhile = "^\s*(if|while)[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)]\s*{\s*$"
+	operations = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
+	doExp = "^\s*do\s*{\s*$"
+	doWhileExp = "^\s*}\s*while[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*$"
+	closingBracket = "^\s*}$"
+
+def doWhile(algorithm, cycles):
+	if(re.match("^\s*do\s*{\s*$", algorithm[0])):
+		outputText.config(state = NORMAL)
+		currentDo = counterList[3]
+		currentDoEnd = counterList[4]
+		outputText.insert(END, "DO{}:\n".format(currentDo))
+		counterList[3] = counterList[3] + 1
+		counterList[4] = counterList[4] + 1
+		algorithm.pop(0)
+		while(re.match("^\s*}\s*while[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*", algorithm[0]) == None):
+			cycles = branchWhile(algorithm, cycles)
+			cycles = operations(algorithm[0], cycles)
+			cycles = doWhile(algorithm, cycles)
+			algorithm.pop(0)
+		instruction = re.match("^\s*}\s*while[(]\s*([A-z]+[0-9]*|[0-9]+)\s*(<|>|!=|==)\s*([A-z]+[0-9]*|[0-9]+)\s*[)];\s*$", algorithm[0])
+		register1 = instruction.group(1)
+		operator = instruction.group(2)
+		register2 = instruction.group(3) 
+		outputText.config(state = NORMAL)
+		if(register1 in registerList):
+			outputText.insert(END, "    MOV R1, [R0 + {}]\n".format(registerList.index(register1)))
+			cycles = cycles + 0
+		else:
+			outputText.insert(END, "    MOV R1, {}\n".format(register1))
+			cycles = cycles + 0
+		if(register2 in registerList):
+			outputText.insert(END, "    MOV R2, [R0 + {}]\n".format(registerList.index(register2)))
+			cycles = cycles + 0
+		else:
+			outputText.insert(END, "    MOV R2, {}\n".format(register2))
+			cycles = cycles + 0
+		if(operator == "<"):
+			outputText.insert(END, "    BRM R1, R2, DOEND{}\n".format(currentDoEnd))
+			outputText.insert(END, "    BRI R1, R2, DOEND{}\n".format(currentDoEnd))
+			cycles = cycles + 0
+		elif(operator == ">"):
+			outputText.insert(END, "    BRME R1, R2, DOEND{}\n".format(currentDoEnd))
+			outputText.insert(END, "    BRI R1, R2, DOEND{}\n".format(currentDoEnd))
+			cycles = cycles + 0
+		elif(operator == "=="):
+			outputText.insert(END, "    BRM R1, R2, DOEND{}\n".format(currentDoEnd))
+			outputText.insert(END, "    BRME R1, R2, DOEND{}\n".format(currentDoEnd))
+			cycles = cycles + 0
+		elif(operator == "!="):
+			outputText.insert(END, "    BRI R1, R2, DOEND{}\n".format(currentDoEnd))
+			cycles = cycles + 0
+		outputText.insert(END, "    JUMP DO{}\n\n".format(currentDo))
+		cycles = cycles + 0
+		outputText.insert(END, "DOEND{}:\n".format(currentDoEnd))
+		outputText.config(state = DISABLED)
+	return cycles
 
 def branchWhile(algorithm, cycles):
 	"""Function that receives an algorithm as parameter and the current cycles and applies if or while instructions."""
@@ -194,16 +250,18 @@ def branchWhile(algorithm, cycles):
 		elif(operator == "!="):
 			outputText.insert(END, "    BRI R1, R2, {}{}\n".format(markup, markupIndex))
 			cycles = cycles + 0
-		outputText.insert(END, "\n")
 		while(re.match("^\s*}$", algorithm[0]) == None):
 			cycles = branchWhile(algorithm, cycles)
 			cycles = operations(algorithm[0], cycles)
+			cycles = doWhile(algorithm, cycles)
 			algorithm.pop(0)
 		outputText.config(state = NORMAL)
 		if(condition == "while"):
 			outputText.delete("end-1c", END)
 			outputText.insert(END, "    JUMP WHILE{}\n\n".format(currentWhile))
+			cycles = cycles + 0
 		outputText.insert(END, "{}{}:\n".format(markup, markupIndex))
+		cycles = cycles + 0
 		outputText.config(state = DISABLED)
 	for i in counterList:
 		counterList[i] = 0
@@ -212,8 +270,8 @@ def branchWhile(algorithm, cycles):
 def compiler(cycles):
 	algorithm = (inputText.get("1.0", END)).split("\n")
 	for line in algorithm:
-		if(re.match("^\s*(int)\s*([A-z]+[0-9]*)\s*$", line)):
-			instruction = re.match("^(int)\s*([A-z]+[0-9]*)\s*$", line)
+		if(re.match("^\s*(int)\s*([A-z]+[0-9]*);\s*$", line)):
+			instruction = re.match("^(int)\s*([A-z]+[0-9]*);\s*$", line)
 			register = instruction.group(2)
 			if(register not in registerList):
 				registerList.append(register)
@@ -223,6 +281,7 @@ def compiler(cycles):
 	while(algorithm != [] and cycles != 0):
 		cycles = branchWhile(algorithm, cycles)
 		cycles = operations(algorithm[0], cycles)
+		cycles = doWhile(algorithm, cycles)
 		algorithm.pop(0)
 	return cycles
 
