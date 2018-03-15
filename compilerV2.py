@@ -232,20 +232,22 @@ def validAlgorithm(algorithm):
 	outputText.config(state = DISABLED)
 	return flag
 
+# grouping is the regular expression group. groupBool is to check if it comes from a FOR instruction or not,
+# expression is the regular expression of the instruction.
 def operations(line, cycles, grouping, groupBool, expression):
 	"""Function that receives a line of code and applies the appropiate instruction in Von Neumann."""
 	if(re.match(expression, line)):
 		outputText.config(state = NORMAL)
 		instruction = re.match(expression, line)
-		if(instruction.group(grouping) != None):
+		if(instruction.group(grouping) != None): # If it is not none, there's an operation in the expression.
 			temporal = re.sub("\s*", "", line)
 			operator = re.split("[A-z]+[0-9]*|[0-9]+", temporal)
 			operand = re.split("[-|=|+|*|/|;]", temporal) # List of registers in the expression. The first one is the storing register.
-			if(grouping == 3):
-				operand.pop(len(operand) - 1)
-			operator.pop(len(operator) - 1)
-			operator.pop(0)
-			operator.pop(0)
+			if(grouping == 3): # If the expression comes from a source different from a FOR, it will remove the last element of the array.
+				operand.pop(len(operand) - 1) # After the split, there's a whitespace at the end of the array. It's removed here.
+			operator.pop(len(operator) - 1) # After the split, there's a whitespace at the end of the array. It's removed here.
+			operator.pop(0) # After the split, there's a whitespace at the start of the array. It's removed here.
+			operator.pop(0) # After the split, there's a '=' in the array. It's removed here.
 			counter = 3 # From the third register onwards, every one of them is a temporal register.
 			index = 0
 			while(operator != []): # If the operator list is empty, it means there aren't any operations left.
@@ -326,6 +328,7 @@ def operations(line, cycles, grouping, groupBool, expression):
 		outputText.config(state = DISABLED)
 	return cycles
 
+# markup is the ending etiquette, endIndex is the index of said etiquette.
 def logicOperation(register1, register2, operator, markup, endIndex, cycles):
 	""""Function that receives the necessary parameters to make a logic operation and returns the cycles it takes."""
 	# The logic operation will be the inverse one, instead of the given one in high level.
@@ -434,7 +437,7 @@ def doWhile(algorithm, cycles):
 		register2 = instruction.group(3) 
 		outputText.config(state = NORMAL)
 		cycles = logicOperation(register1, register2, operator, "DOEND", currentDoEnd, cycles)
-		outputText.delete("end-1c", END)
+		outputText.delete("end-1c", END) # Removes the last end of line in the translation box, just because.
 		outputText.insert(END, "    JUMP DO{}\n\n".format(currentDo))
 		cycles = cycles + 5
 		outputText.insert(END, "DOEND{}:\n".format(currentDoEnd))
@@ -455,8 +458,8 @@ def branchWhile(algorithm, cycles):
 		currentElse = counterList[0] # Stores the current else index etiquette, to use it at the end of the instruction.
 		currentWhile = counterList[1] # Stores the current while index etiquette, to use it at the end of the instruction.
 		currentEndWhile = counterList[2] # Stores the current endWhile index etiquette, to use it at the end of the instruction.
-		markup = ""
-		markupIndex = -1
+		markup = "" # If the expression is an IF, it will store an else etiquette. If not, it will store an endWhile etiquette.
+		markupIndex = -1 # Current index of the end etiquette. If it is -1, there is a bug in the code.
 		opExpression = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
 		if(condition == "if"):
 			markup = "ELSE"
@@ -479,23 +482,23 @@ def branchWhile(algorithm, cycles):
 			algorithm.pop(0)
 		outputText.config(state = NORMAL)
 		if(condition == "while"):
-			outputText.delete("end-1c", END)
+			outputText.delete("end-1c", END) # Removes the last end of line in the translation box, just because.
 			outputText.insert(END, "    JUMP WHILE{}\n\n".format(currentWhile))
 			cycles = cycles + 5
 		outputText.insert(END, "{}{}:\n".format(markup, markupIndex))
 		outputText.config(state = DISABLED)
-	for i in range(len(counterList)):
+	for i in range(len(counterList)): # Empties the counter list after iterating the code.
 		counterList[i] = 0
 	return cycles
 	
 def compiler(cycles):
-	algorithm = (inputText.get("1.0", END)).split("\n")
-	balancedList[:] = []
+	algorithm = (inputText.get("1.0", END)).split("\n") # Separates the algorithm by end of line and puts it in a list.
+	balancedList[:] = [] # Empties the list, just in case.
 	opExpression = "^\s*([A-z]+[0-9]*)\s*=\s*([A-z]+[0-9]*|[0-9]+)(\s*([-|+|*|/])\s*([A-z]+[0-9]*|[0-9]+))*;\s*$"
 	if(validAlgorithm(algorithm)):
-		algorithm = (inputText.get("1.0", END)).split("\n")
+		algorithm = (inputText.get("1.0", END)).split("\n") # Re initializes the variable in case it was emptied before.
 		outputText.config(state = NORMAL)
-		outputText.insert(END, "    MOV R0, 0\n\n")
+		outputText.insert(END, "    MOV R0, 0\n\n") # Inserts the base pointer of the array.
 		cycles = cycles + 5
 		outputText.config(state = DISABLED)
 		while(algorithm != [] and cycles != 0):
@@ -509,7 +512,7 @@ def compiler(cycles):
 def translate():
 	cycles = 1
 	outputText.config(state = NORMAL)
-	outputText.delete("1.0", END)
+	outputText.delete("1.0", END) # Deletes the current text of the translated 
 	outputText.config(state = DISABLED)
 	registerList[:] = []
 	timeParameter[:] = [0, 0]
@@ -546,8 +549,6 @@ def clear():
 	timeParameter[:] = [0, 0]
 	for i in range(len(counterList)):
 		counterList[i] = 0
-	for i in range(len(timeParameter)):
-		timeParameter[i] = 0
 
 def period():
 	"""Procedure that enables the periodText text box and clears the frequencyText text box."""
